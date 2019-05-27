@@ -11,23 +11,7 @@ const ItemCtrl = (function() {
 
   // Data Structure / State
   const data = {
-    items: [
-      {
-        id: 0,
-        name: "Steak Dinner",
-        calories: 1200
-      },
-      {
-        id: 1,
-        name: "Eggs",
-        calories: 300
-      },
-      {
-        id: 2,
-        name: "Brocolli",
-        calories: 700
-      }
-    ],
+    items: [],
     currentItem: null,
     totalCalories: 0
   };
@@ -54,6 +38,14 @@ const ItemCtrl = (function() {
     },
     logData: function() {
       return data;
+    },
+    getTotalCalories: function() {
+      let total = 0;
+      data.items.forEach(function(item) {
+        total += item.calories;
+      });
+      data.totalCalories = total;
+      return data.totalCalories;
     }
   };
 })();
@@ -64,7 +56,8 @@ const UICtrl = (function() {
     itemList: "#item-list",
     addBtn: ".add-btn",
     itemNameInput: "#item-name",
-    itemCaloriesInput: "#item-calories"
+    itemCaloriesInput: "#item-calories",
+    totalCalories: ".total-calories"
   };
   return {
     populateItemList: function(items) {
@@ -72,7 +65,7 @@ const UICtrl = (function() {
       items.forEach(function(item) {
         html += `
         <li class="collection-item" id="item-${item.id}">
-        <strong>${item.name} </strong><em>${item.calories}</em>
+        <strong>${item.name}: </strong><em>${item.calories} Calories</em>
         <a href="#" class="secondary-content">
           <i class="edit-item fa fa-pencil"></i>
         </a>
@@ -85,11 +78,34 @@ const UICtrl = (function() {
     getSelectors: function() {
       return UISelectors;
     },
+    addListItem: function(item) {
+      // Show the list
+      document.querySelector(UISelectors.itemList).style.display = "block";
+      // Create li element
+      const li = document.createElement("li");
+      li.className = "collection-item";
+      li.id = `item-${item.id}`;
+      li.innerHTML = `
+      <strong>${item.name}: </strong><em>${item.calories} Calories</em>
+      <a href="#" class="secondary-content">
+        <i class="edit-item fa fa-pencil"></i>
+      </a>`;
+      document
+        .querySelector(UISelectors.itemList)
+        .insertAdjacentElement("beforeend", li);
+    },
     getItemInput: function() {
       return {
         name: document.querySelector(UISelectors.itemNameInput).value,
         calories: document.querySelector(UISelectors.itemCaloriesInput).value
       };
+    },
+    showTotalCalories: function(totCal) {
+      const totalCalories = document.querySelector(UISelectors.totalCalories);
+      totalCalories.textContent = totCal;
+    },
+    hideList: function() {
+      document.querySelector(UISelectors.itemList).style.display = "none";
     }
   };
 })();
@@ -111,6 +127,13 @@ const App = (function(ItemCtrl, UICtrl) {
     const input = UICtrl.getItemInput();
     if (input.name != "" && input.calories != "") {
       const newItem = ItemCtrl.addItem(input.name, input.calories);
+      UICtrl.addListItem(newItem);
+      // Get Total Calories
+      const totalCalories = ItemCtrl.getTotalCalories();
+      UICtrl.showTotalCalories(totalCalories);
+
+      document.querySelector("#item-name").value = "";
+      document.querySelector("#item-calories").value = "";
     }
     e.preventDefault();
   };
@@ -119,9 +142,13 @@ const App = (function(ItemCtrl, UICtrl) {
     init: function() {
       // Fetch Items from Data Structure
       const items = ItemCtrl.getItems();
-
-      // Populate list with items
-      UICtrl.populateItemList(items);
+      if (items.length == 0) {
+        UICtrl.hideList();
+      } else {
+        UICtrl.populateItemList(items);
+      }
+      const totalCalories = ItemCtrl.getTotalCalories();
+      UICtrl.showTotalCalories(totalCalories);
 
       // Load Event Listeners
       loadEventListeners();
