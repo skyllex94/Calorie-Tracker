@@ -1,4 +1,55 @@
 // Storage Controller
+const StorageCtrl = (function() {
+  // Public Methods
+  return {
+    storeItem: function(upcomingItem) {
+      let items;
+      // Check if any items in localstorage
+      if (localStorage.getItem("items") === null) {
+        items = [];
+        items.push(upcomingItem);
+        localStorage.setItem("items", JSON.stringify(items));
+      } else {
+        // Take whats already in localStorage
+        items = JSON.parse(localStorage.getItem("items"));
+        items.push(upcomingItem);
+        localStorage.setItem("items", JSON.stringify(items));
+      }
+    },
+    getItemsFromStorage: function() {
+      let items;
+      if (localStorage.getItem("items") == null) {
+        items = [];
+      } else {
+        items = JSON.parse(localStorage.getItem("items"));
+      }
+      return items;
+    },
+    updateItemStorage: function(updatedItem) {
+      let items = JSON.parse(localStorage.getItem("items"));
+      items.forEach(function(item, index) {
+        if (updatedItem.id == item.id) {
+          items.splice(index, 1, updatedItem);
+        }
+      });
+      localStorage.setItem("items", JSON.stringify(items));
+    },
+    deleteItemStorage: function(deletingItem) {
+      let items = JSON.parse(localStorage.getItem("items"));
+      items.forEach(function(item, index) {
+        if (deletingItem.id == item.id) {
+          items.splice(index, 1);
+        }
+      });
+      localStorage.setItem("items", JSON.stringify(items));
+    },
+    clearAllItemsFromStorage: function() {
+      let items = JSON.parse(localStorage.getItem("items"));
+      items = [];
+      localStorage.setItem("items", JSON.stringify(items));
+    }
+  };
+})();
 
 // Item Controller
 const ItemCtrl = (function() {
@@ -11,7 +62,7 @@ const ItemCtrl = (function() {
 
   // Data Structure / State
   const data = {
-    items: [],
+    items: StorageCtrl.getItemsFromStorage(),
     currentItem: null,
     totalCalories: 0
   };
@@ -213,7 +264,7 @@ const UICtrl = (function() {
 })();
 
 // App Controller
-const App = (function(ItemCtrl, UICtrl) {
+const App = (function(ItemCtrl, UICtrl, StorageCtrl) {
   // Load Event Listeners
   const loadEventListeners = function() {
     const UISelectors = UICtrl.getSelectors();
@@ -254,7 +305,7 @@ const App = (function(ItemCtrl, UICtrl) {
     // Back Button Event
     document
       .querySelector(UISelectors.backBtn)
-      .addEventListener("click", UICtrl.clearEditState);
+      .addEventListener("click", backButton);
   };
 
   const itemAddSubmit = function(e) {
@@ -267,9 +318,16 @@ const App = (function(ItemCtrl, UICtrl) {
       const totalCalories = ItemCtrl.getTotalCalories();
       UICtrl.showTotalCalories(totalCalories);
 
+      // Store in Local Storage
+      StorageCtrl.storeItem(newItem);
       document.querySelector("#item-name").value = "";
       document.querySelector("#item-calories").value = "";
     }
+    e.preventDefault();
+  };
+
+  const backButton = function(e) {
+    UICtrl.clearEditState();
     e.preventDefault();
   };
 
@@ -296,6 +354,8 @@ const App = (function(ItemCtrl, UICtrl) {
 
     const totalCalories = ItemCtrl.getTotalCalories();
     UICtrl.showTotalCalories(totalCalories);
+
+    StorageCtrl.updateItemStorage(updatedItem);
     UICtrl.clearEditState();
     e.preventDefault();
   };
@@ -308,6 +368,8 @@ const App = (function(ItemCtrl, UICtrl) {
 
     const totalCalories = ItemCtrl.getTotalCalories();
     UICtrl.showTotalCalories(totalCalories);
+
+    StorageCtrl.deleteItemStorage(currentItem);
     UICtrl.clearEditState();
     e.preventDefault();
   };
@@ -318,6 +380,8 @@ const App = (function(ItemCtrl, UICtrl) {
     UICtrl.removeAllItems();
     const totalCalories = ItemCtrl.getTotalCalories();
     UICtrl.showTotalCalories(totalCalories);
+
+    StorageCtrl.clearAllItemsFromStorage();
     UICtrl.hideList();
   };
 
@@ -340,7 +404,7 @@ const App = (function(ItemCtrl, UICtrl) {
       loadEventListeners();
     }
   };
-})(ItemCtrl, UICtrl);
+})(ItemCtrl, UICtrl, StorageCtrl);
 
 // Initializing the Web App
 App.init();
